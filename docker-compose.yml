@@ -1,0 +1,125 @@
+name: relay-testnet
+services:
+    besu:
+        container_name: besu-testnet
+        privileged: true
+        ports:
+            - 10000:22 #
+            - 10001:3000 # Grafana
+            - 10002:8545 # JSON RPC HTTP Server
+            - 10003:8546 # JSON RPC Websocket Service
+            - 10004:9001 # Prometheus
+            - 10005:9081 #
+            - 10006:9082 #
+            - 10007:9083 #
+            - 10008:9090 #
+            - 10009:18545 #
+            - 10010:20000 #
+            - 10011:20001 #
+            - 10012:20002 #
+            - 10013:20003 #
+            - 10014:20004 #
+            - 10015:20005 #
+            - 10016:25000 # Block Explorer
+        image: besu-mp-testnet-1
+        volumes:
+          - besu
+        networks:
+          - testnet-2x
+    fabric:
+      container_name: ${CACTUS_FABRIC_ALL_IN_ONE_CONTAINER_NAME:-fabric-testnet-1}
+      image: ${CACTUS_FABRIC_ALL_IN_ONE_IMAGE_NAME:-fabric-testnet}
+      privileged: true
+      build:
+        context: ./cacti/tools/docker/fabric-all-in-one
+        dockerfile: Dockerfile_v2.x
+      ports:
+        - "20000:22" # SSH
+        - "20001:7050" # orderer.example.com
+        - "20002:7051" # peer0.org1.example.com
+        - "20003:9051" # peer0.org2.example.com
+        - "20004:7054" # ca_org1
+        - "20005:8054" # ca_org2
+        - "20006:9054" # ca_orderer
+        - "20007:9001" # supervisord
+        - "20010:9443" # Listener orderer
+        - "20011:9444" # Listener peer0.org1
+        - "20012:9445" # Listener peer0.org2
+      environment:
+        - FABRIC_VERSION=${CACTUS_FABRIC_ALL_IN_ONE_VERSION:-2.5.12}
+        - FABRIC_NODEENV_VERSION=${CACTUS_FABRIC_ALL_IN_ONE_NODEENV_VERSION:-2.5.4}
+        - CA_VERSION=${CACTUS_FABRIC_ALL_IN_ONE_CA_VERSION:-1.5.3}
+        - COUCH_VERSION_FABRIC=${CACTUS_FABRIC_ALL_IN_ONE_COUCH_VERSION_FABRIC:-0.4}
+        - COUCH_VERSION=${CACTUS_FABRIC_ALL_IN_ONE_COUCH_VERSION:-3.2.2}
+        - CACTUS_FABRIC_TEST_LOOSE_MEMBERSHIP=1
+      volumes:
+        - fabric-data 
+      networks:
+        testnet-2x:
+          aliases:
+            - fabric
+
+    prometheus-fabric:
+      image: prom/prometheus:latest
+      container_name: prometheus-fabric-testnet
+      # hostname: prometheus
+      tty: true
+      volumes:
+        - prometheus
+        - ./prometheus-fabric.yml:/etc/prometheus/prometheus.yml
+      ports:
+        - 20020:9090
+      networks: 
+        testnet-2x: 
+          aliases: 
+            - prometheus
+      depends_on: 
+        - fabric
+
+    grafana:
+      image: grafana/grafana:latest
+      container_name: grafana-fabric-testnet
+      # hostname: grafana
+      environment:
+        - GF_AUTH_PROXY_ENABLED=true
+        - GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning/
+      volumes:
+        - grafana
+        - ./provisioning/:/var/lib/grafana/provisioning/
+      ports:
+        - 20021:3000
+      networks:
+        testnet-2x: 
+          aliases:
+            - grafana
+      depends_on:
+        - prometheus-fabric
+
+networks:
+  testnet-2x:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1400
+      com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
+
+volumes: 
+  fabric-data:
+    name: fabric-data
+    labels: 
+      - "com.docker.compose.project=cactus"
+      - "com.docker.compose.service=fabric"
+  grafana: 
+    name: grafana
+    labels: 
+      - "com.docker.compose.project=cactus"
+      - "com.docker.compose.service=grafana"
+  besu:
+    name: besu
+    labels: 
+      - "com.docker.compose.project=cactus"
+      - "com.docker.compose.service=besu"
+  prometheus:   
+    name: prometheus
+    labels: 
+      - "com.docker.compose.project=cactus"
+      - "com.docker.compose.service=prometheus"
