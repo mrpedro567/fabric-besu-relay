@@ -22,10 +22,12 @@ services:
             - 10015:20005 #
             - 10016:25000 # Block Explorer
         image: besu-mp-testnet-1
-        volumes:
-          - besu
+        # volumes:
+        #   - besu:/
         networks:
-          - testnet-2x
+          testnet-2x: 
+            aliases:
+              - besu
     fabric:
       container_name: ${CACTUS_FABRIC_ALL_IN_ONE_CONTAINER_NAME:-fabric-testnet-1}
       image: ${CACTUS_FABRIC_ALL_IN_ONE_IMAGE_NAME:-fabric-testnet}
@@ -52,8 +54,8 @@ services:
         - COUCH_VERSION_FABRIC=${CACTUS_FABRIC_ALL_IN_ONE_COUCH_VERSION_FABRIC:-0.4}
         - COUCH_VERSION=${CACTUS_FABRIC_ALL_IN_ONE_COUCH_VERSION:-3.2.2}
         - CACTUS_FABRIC_TEST_LOOSE_MEMBERSHIP=1
-      volumes:
-        - fabric-data 
+      # volumes:
+      #   - fabric-data:/
       networks:
         testnet-2x:
           aliases:
@@ -65,7 +67,7 @@ services:
       # hostname: prometheus
       tty: true
       volumes:
-        - prometheus
+        # - prometheus:/
         - ./prometheus-fabric.yml:/etc/prometheus/prometheus.yml
       ports:
         - 20020:9090
@@ -81,10 +83,10 @@ services:
       container_name: grafana-fabric-testnet
       # hostname: grafana
       environment:
-        - GF_AUTH_PROXY_ENABLED=true
+        - GF_AUTH_PROXY_ENABLED=false
         - GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning/
       volumes:
-        - grafana
+        # - grafana:/
         - ./provisioning/:/var/lib/grafana/provisioning/
       ports:
         - 20021:3000
@@ -99,7 +101,7 @@ networks:
   testnet-2x:
     driver: bridge
     driver_opts:
-      com.docker.network.driver.mtu: 1400
+      com.docker.network.driver.mtu: 1500
       com.docker.network.bridge.host_binding_ipv4: "127.0.0.1"
 
 volumes: 

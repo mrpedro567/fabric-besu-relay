@@ -1,4 +1,5 @@
 docker container rm fabric-testnet-1;
+docker volume prune;
 # docker run \
 #	--privileged \
 #	--env FABRIC_VERSION=2.2.13 \
@@ -20,4 +21,4 @@ docker container rm fabric-testnet-1;
 #	--publish 20014:10051\
 #	fabric-testnet;
 
-docker compose up fabric prometheus-fabric grafana;
+docker compose up fabric ;
